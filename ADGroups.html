@@ -1,0 +1,109 @@
+
+<link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> 
+<script type="text/javascript" src="https://secure.aadcdn.microsoftonline-p.com/lib/1.0.10/js/adal.min.js"></script>
+
+
+  	
+
+
+<div class="container-fluide">
+<h1>AD Group</h1>
+
+<table id="groupData" class="table table-striped"> 
+	<thead>
+		<tr>
+		   <th>Name</th>
+		   <th>Mail</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
+</div>
+
+<script>
+
+$(function(){
+
+
+    console.log('Loading'); 
+	
+	var accessToken = "";
+	
+	var configOptions = {
+        clientId: "bf4aaa94-f2a8-4009-808a-890ceea5dd6d",     //Required clientId to get accessToken
+        postLogoutRedirectUri: window.location.origin,
+		redirectURI: window.location.href, // Your page link
+		//cacheLocation: "localStorage",  //Optional to save data in localStorage by defualt it store in session storage
+    }
+
+    window.authContext = new AuthenticationContext(configOptions);
+
+    
+	if(authContext.isCallback(window.location.hash))
+	{
+      authContext.handleWindowCallback();       //Using this we can get user from getCachedUser() after login
+	}
+	
+		var user = authContext.getCachedUser();		
+		if(user == null){
+			authContext.login();   //Login if user not found in getCachedUser
+		}
+		else
+		{
+			//setTimeout(function(){ getToken(); }, 1000);
+			//setTimeout(function(){ getUser(); }, 3000);
+			 getToken();   
+			
+		}
+	
+    function getToken(){    	//get accessToken 	
+			authContext.acquireToken("https://graph.microsoft.com",function(error, token){
+			console.log("Error =" +error);
+			console.log("Token =" +token);
+			accessToken  = token;
+			if(accessToken && accessToken != "")
+			{
+			   getGroups();			   
+			}
+        })
+    }	
+
+ function getGroups(){	
+
+
+		$.ajax({
+			url: "https://graph.microsoft.com/v1.0/groups/?$expand=members",			
+			type: 'GET',			
+			headers: {
+		        "Authorization": "Bearer " + accessToken
+			},
+			async:false,
+			success: function(data) {
+			$('#groupData tbody').empty();
+				allData = data.value;
+				$.each(allData,function(e,item){
+					$('#groupData tbody').append('<tr><td colspan="2" style="font-weight:bold;">Group: '+item.displayName+'</td></tr>');
+						$.each(item.members,function(i,itm){
+							$('#groupData tbody').append('<tr><td>'+itm.displayName+'</td>'+
+												 '<td>'+(itm.mail?itm.mail:"")+'</td></tr>');
+						})						
+				})				    
+			},
+			error: function(error) 
+			{ 
+				alert("Error" + error);
+			}
+		});//ajax
+    }//get user
+
+
+
+
+
+})
+
+</script>
